@@ -1,0 +1,430 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', system-ui, sans-serif;
+    
+    /* Light mode variables */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 25 95% 53%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark mode variables */
+    --background: 222 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 216 28% 9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 216 28% 9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 28% 12%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 216 28% 12%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 216 28% 12%;
+    --accent-foreground: 210 40% 98%;
+    --border: 216 28% 14%;
+    --input: 216 28% 14%;
+    --ring: 25 95% 53%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-background;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-brand-500/20 text-brand-900;
+  }
+}
+
+@layer components {
+  /* ============================================================
+     CARD COMPONENTS
+  ============================================================ */
+  .card-base {
+    @apply rounded-2xl border border-border bg-card overflow-hidden transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply hover:shadow-card-hover dark:hover:shadow-card-dark-hover hover:border-brand-500/20 hover:-translate-y-1;
+  }
+
+  /* ============================================================
+     BUTTON COMPONENTS  
+  ============================================================ */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700 shadow-sm;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border;
+  }
+
+  .btn-ghost {
+    @apply btn hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-outline {
+    @apply btn border border-border hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-sm {
+    @apply h-8 px-3 text-sm;
+  }
+
+  .btn-md {
+    @apply h-10 px-4 text-sm;
+  }
+
+  .btn-lg {
+    @apply h-12 px-6 text-base;
+  }
+
+  .btn-xl {
+    @apply h-14 px-8 text-lg;
+  }
+
+  /* ============================================================
+     BADGE COMPONENTS
+  ============================================================ */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-brand {
+    @apply badge bg-brand-500/10 text-brand-600 dark:text-brand-400;
+  }
+
+  .badge-youtube {
+    @apply badge bg-red-500/10 text-red-600 dark:text-red-400;
+  }
+
+  .badge-internal {
+    @apply badge bg-blue-500/10 text-blue-600 dark:text-blue-400;
+  }
+
+  /* ============================================================
+     FORM ELEMENTS
+  ============================================================ */
+  .input-base {
+    @apply flex w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200;
+  }
+
+  .label {
+    @apply text-sm font-medium leading-none text-foreground;
+  }
+
+  /* ============================================================
+     TYPOGRAPHY
+  ============================================================ */
+  .heading-1 {
+    @apply text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl;
+  }
+
+  .heading-2 {
+    @apply text-3xl font-bold tracking-tight sm:text-4xl;
+  }
+
+  .heading-3 {
+    @apply text-2xl font-semibold tracking-tight sm:text-3xl;
+  }
+
+  .heading-4 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent;
+  }
+
+  /* ============================================================
+     SECTION CONTAINERS
+  ============================================================ */
+  .section-container {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-padding {
+    @apply py-12 sm:py-16 lg:py-20;
+  }
+
+  /* ============================================================
+     AD CARD
+  ============================================================ */
+  .ad-card {
+    @apply card-base card-hover cursor-pointer;
+  }
+
+  .ad-card-thumbnail {
+    @apply relative aspect-video w-full overflow-hidden bg-muted;
+  }
+
+  .ad-card-thumbnail img {
+    @apply h-full w-full object-cover transition-transform duration-500 group-hover:scale-105;
+  }
+
+  .ad-card-duration {
+    @apply absolute bottom-2 right-2 rounded-md bg-black/80 px-1.5 py-0.5 text-xs font-medium text-white backdrop-blur-sm;
+  }
+
+  .ad-card-source {
+    @apply absolute top-2 left-2;
+  }
+
+  .ad-card-body {
+    @apply p-4;
+  }
+
+  /* ============================================================
+     LOADING STATES
+  ============================================================ */
+  .skeleton {
+    @apply animate-pulse rounded-xl bg-muted;
+  }
+
+  .skeleton-text {
+    @apply skeleton h-4 w-full;
+  }
+
+  .skeleton-text-sm {
+    @apply skeleton h-3 w-3/4;
+  }
+
+  /* ============================================================
+     SHIMMER EFFECT
+  ============================================================ */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* ============================================================
+     HERO SEARCH
+  ============================================================ */
+  .search-input {
+    @apply w-full rounded-2xl border-2 border-transparent bg-white/10 px-6 py-4 text-base text-white placeholder:text-white/50 backdrop-blur-sm transition-all duration-200 focus:border-brand-500/50 focus:bg-white/15 focus:outline-none dark:bg-black/20;
+  }
+
+  .search-input-desktop {
+    @apply w-full rounded-xl border border-input bg-background px-5 py-3.5 text-base shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all duration-200;
+  }
+
+  /* ============================================================
+     SIDEBAR FILTERS
+  ============================================================ */
+  .filter-section {
+    @apply rounded-2xl border border-border bg-card p-4 space-y-3;
+  }
+
+  .filter-label {
+    @apply text-sm font-semibold text-foreground;
+  }
+
+  .filter-option {
+    @apply flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors duration-150;
+  }
+
+  .filter-option.active {
+    @apply bg-brand-500/10 text-brand-600 dark:text-brand-400 font-medium;
+  }
+
+  /* ============================================================
+     DARK MODE OPTIMIZATIONS
+  ============================================================ */
+  .dark .ad-card {
+    @apply border-white/5 bg-dark-800/80;
+  }
+
+  .dark .ad-card:hover {
+    @apply border-brand-500/30 shadow-card-dark-hover;
+  }
+
+  /* ============================================================
+     ANIMATIONS
+  ============================================================ */
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-1;
+  }
+
+  .hover-glow {
+    @apply transition-shadow duration-300 hover:shadow-glow-brand;
+  }
+
+  .fade-in {
+    @apply animate-fade-in;
+  }
+
+  .slide-up {
+    @apply animate-slide-up;
+  }
+
+  /* ============================================================
+     NAVIGATION
+  ============================================================ */
+  .nav-link {
+    @apply relative flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200;
+  }
+
+  .nav-link.active {
+    @apply text-brand-500;
+  }
+
+  .nav-link::after {
+    @apply absolute -bottom-1 left-0 h-0.5 w-0 bg-brand-500 transition-all duration-200 content-[''] rounded-full;
+  }
+
+  .nav-link:hover::after {
+    @apply w-full;
+  }
+
+  .nav-link.active::after {
+    @apply w-full;
+  }
+}
+
+/* ============================================================
+   VIDEO PLAYER
+============================================================ */
+.video-container {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 */
+  height: 0;
+  overflow: hidden;
+}
+
+.video-container iframe,
+.video-container video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ============================================================
+   RESPONSIVE GRID
+============================================================ */
+.ads-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .ads-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .ads-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .ads-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Wide layout (sidebar hidden) */
+.ads-grid-wide {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+
+.card { background: rgba(30,41,59,0.7); border: 1px solid rgba(255,255,255,0.07); border-radius: 1rem; transition: all 0.3s ease; }
+.card:hover { border-color: rgba(249,115,22,0.3); transform: translateY(-3px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), 0 4px 20px -4px rgba(249,115,22,0.2); }
+    
+
+
+@media (min-width: 640px) {
+  .ads-grid-wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .ads-grid-wide {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .ads-grid-wide {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .ads-grid-wide {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

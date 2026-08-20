@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tivoads-cloudflare",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "NEXTAUTH_URL": "https://tivoads.com",
+    "NEXT_PUBLIC_APP_URL": "https://tivoads.com",
+    "NEXT_PUBLIC_APP_NAME": "tivoads",
+    "NEXT_PUBLIC_APP_DESCRIPTION": "The Premium Ad Discovery & Research Library",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tivoads-db",
+      "database_id": "c1088cb0-c0e7-4770-a6a7-12435cf997d4"
+    }
+  ]
+}

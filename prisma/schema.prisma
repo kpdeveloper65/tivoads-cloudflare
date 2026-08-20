@@ -1,0 +1,535 @@
+// TivoAds - Prisma Database Schema (Cloudflare D1 / SQLite Version)
+// Premium Ad Discovery & Research Platform
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ============================================================
+// USER & AUTH
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  username      String?   @unique
+  image         String?
+  password      String?   // hashed with bcrypt
+  role          String    @default("USER") // USER, MODERATOR, ADMIN
+  bio           String?
+  website       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLoginAt DateTime?
+
+  // Relations
+  accounts    Account[]
+  sessions    Session[]
+  favorites   Favorite[]
+  collections Collection[]
+  watchHistory WatchHistory[]
+  submissions  Submission[]
+  comments     Comment[]
+  following    CategoryFollow[]
+  brandFollows BrandFollow[]
+  importLogs   ImportLog[]
+
+  @@index([email])
+  @@index([username])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================================
+// CONTENT MODELS
+// ============================================================
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  icon        String?
+  color       String? // hex color for UI
+  imageUrl    String?
+  parentId    String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+  adCount     Int     @default(0) // cached count
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  ads      Ad[]
+  follows  CategoryFollow[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Brand {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  logoUrl     String?
+  websiteUrl  String?
+  industry    String?
+  country     String?
+  isVerified  Boolean @default(false)
+  isActive    Boolean @default(true)
+  adCount     Int     @default(0) // cached count
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ads     Ad[]
+  follows BrandFollow[]
+
+  @@index([slug])
+  @@index([name])
+  @@map("brands")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  adCount   Int      @default(0) // cached count
+  createdAt DateTime @default(now())
+
+  ads AdTag[]
+
+  @@index([slug])
+  @@map("tags")
+}
+
+model Ad {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  brandId     String?
+  categoryId  String?
+  
+  // Content
+  descriptionShort String?
+  descriptionLong  String?
+  campaign         String? // campaign name or tagline
+  slogan           String?
+  
+  // Video
+  videoUrl         String?
+  embedUrl         String?
+  thumbnailUrl     String?
+  duration         Int?    // seconds
+  
+  // Source / Metadata
+  sourceType       String     @default("INTERNAL") // INTERNAL, YOUTUBE, MANUAL, IMPORTED, SUBMITTED
+  sourcePlatform   String?    // "youtube", "vimeo", etc.
+  externalVideoId  String?    // YouTube video ID, etc.
+  externalChannelId String?
+  externalChannelName String?
+  
+  // Classification
+  language     String? @default("en")
+  country      String?
+  year         Int?    // year the ad was created/aired
+  publishDate  DateTime?
+  
+  // Status
+  status       String   @default("PUBLISHED") // DRAFT, PENDING, PUBLISHED, REJECTED, ARCHIVED
+  isFeatured   Boolean  @default(false)
+  isTrending   Boolean  @default(false)
+  
+  // Metrics (cached)
+  viewCount    Int     @default(0)
+  favoriteCount Int    @default(0)
+  shareCount   Int     @default(0)
+  trendingScore Float  @default(0)
+  
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  
+  // Import tracking
+  importBatchId String?
+  originalId    String? // original ID from old database
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  brand        Brand?      @relation(fields: [brandId], references: [id])
+  category     Category?   @relation(fields: [categoryId], references: [id])
+  tags         AdTag[]
+  favorites    Favorite[]
+  collections  CollectionAd[]
+  watchHistory WatchHistory[]
+  comments     Comment[]
+  relatedAds   AdRelation[] @relation("AdRelationFrom")
+  relatedToAds AdRelation[] @relation("AdRelationTo")
+
+  @@index([slug])
+  @@index([brandId])
+  @@index([categoryId])
+  @@index([sourceType])
+  @@index([status])
+  @@index([publishDate])
+  @@index([isFeatured])
+  @@index([isTrending])
+  @@index([trendingScore])
+  @@index([externalVideoId])
+  @@index([year])
+  @@map("ads")
+}
+
+model AdTag {
+  adId  String
+  tagId String
+
+  ad  Ad  @relation(fields: [adId], references: [id], onDelete: Cascade)
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([adId, tagId])
+  @@map("ad_tags")
+}
+
+model AdRelation {
+  fromAdId String
+  toAdId   String
+  score    Float  @default(0) // similarity score
+  reason   String? // "same_brand", "same_category", "similar_tags"
+
+  fromAd Ad @relation("AdRelationFrom", fields: [fromAdId], references: [id], onDelete: Cascade)
+  toAd   Ad @relation("AdRelationTo", fields: [toAdId], references: [id], onDelete: Cascade)
+
+  @@id([fromAdId, toAdId])
+  @@map("ad_relations")
+}
+
+// ============================================================
+// USER ENGAGEMENT
+// ============================================================
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  adId      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ad   Ad   @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, adId])
+  @@index([userId])
+  @@index([adId])
+  @@map("favorites")
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  slug        String
+  description String?              
+  coverImage  String?
+  visibility  String   @default("PRIVATE") // PUBLIC, PRIVATE, UNLISTED
+  adCount     Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ads  CollectionAd[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+  @@map("collections")
+}
+
+model CollectionAd {
+  collectionId String
+  adId         String
+  sortOrder    Int      @default(0)
+  addedAt      DateTime @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  ad         Ad         @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, adId])
+  @@map("collection_ads")
+}
+
+model WatchHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  adId      String
+  watchedAt DateTime @default(now())
+  duration  Int?     // seconds watched
+  completed Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ad   Ad   @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, adId])
+  @@index([userId])
+  @@index([adId])
+  @@map("watch_history")
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  userId     String
+  adId       String
+  content    String   
+  isApproved Boolean  @default(false)
+  parentId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ad      Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+  parent  Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([adId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model CategoryFollow {
+  userId     String
+  categoryId String
+  followedAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([userId, categoryId])
+  @@map("category_follows")
+}
+
+model BrandFollow {
+  userId     String
+  brandId    String
+  followedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@id([userId, brandId])
+  @@map("brand_follows")
+}
+
+// ============================================================
+// SUBMISSIONS & ADMIN QUEUE
+// ============================================================
+
+model Submission {
+  id           String    @id @default(cuid())
+  title        String
+  brandName    String?
+  categoryName String?
+  videoUrl     String           
+  notes        String?          
+  contactEmail String?
+  submittedBy  String?          // userId if logged in
+  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED, DUPLICATE
+  reviewNotes  String?          
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  importedAdId String?          // if approved and imported
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User? @relation(fields: [submittedBy], references: [id])
+
+  @@index([status])
+  @@map("submissions")
+}
+
+// ============================================================
+// YOUTUBE DISCOVERY CACHE
+// ============================================================
+
+model YouTubeCache {
+  id          String   @id @default(cuid())
+  query       String
+  queryHash   String   @unique // MD5 hash of query+params for quick lookup
+  results     String   // Serialized JSON for SQLite D1 compatibility
+  resultCount Int      @default(0)
+  cachedAt    DateTime @default(now())
+  expiresAt   DateTime // Cache expiration (usually 1-24 hours)
+
+  @@index([queryHash])
+  @@index([expiresAt])
+  @@map("youtube_cache")
+}
+
+model YouTubeCandidate {
+  id              String   @id @default(cuid())
+  videoId         String   @unique // YouTube video ID
+  title           String
+  channelName     String?
+  channelId       String?
+  description     String?  
+  thumbnailUrl    String?
+  publishedAt     DateTime?
+  duration        String?  // ISO 8601 duration from YouTube
+  durationSeconds Int?
+  viewCount       Int?     // Adjusted to Int for SQLite compatibility
+  rawData         String?  // Serialized JSON for SQLite D1 compatibility
+  
+  // Admin workflow
+  status          String   @default("CANDIDATE") // CANDIDATE, IMPORTED, REJECTED, DUPLICATE
+  reviewNotes     String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  importedAdId    String?  // Ad ID if imported
+  
+  // Duplicate detection
+  possibleDuplicateId String? // Ad ID of possible duplicate
+  duplicateScore      Float?  // similarity score
+  
+  discoveredAt    DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([videoId])
+  @@index([status])
+  @@map("youtube_candidates")
+}
+
+// ============================================================
+// IMPORT / ADMIN TOOLS
+// ============================================================
+
+model ImportBatch {
+  id           String    @id @default(cuid())
+  name         String
+  fileName     String?
+  fileType     String?   // "csv", "json", "sql"
+  totalRecords Int       @default(0)
+  imported     Int       @default(0)
+  skipped      Int       @default(0)
+  failed       Int       @default(0)
+  duplicates   Int       @default(0)
+  status       String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED, SKIPPED
+  errorLog     String?   // Serialized JSON for SQLite D1 compatibility
+  config       String?   // Serialized JSON for SQLite D1 compatibility
+  initiatedBy  String?
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  completedAt  DateTime?
+
+  logs ImportLog[]
+
+  @@index([status])
+  @@map("import_batches")
+}
+
+model ImportLog {
+  id           String   @id @default(cuid())
+  batchId      String
+  userId       String?
+  action       String   // "import", "skip", "error", "duplicate"
+  originalData String?  // Serialized JSON for SQLite D1 compatibility
+  importedId   String?  // Created ad ID
+  message      String?  
+  createdAt    DateTime @default(now())
+
+  batch ImportBatch @relation(fields: [batchId], references: [id])
+  user  User?       @relation(fields: [userId], references: [id])
+
+  @@index([batchId])
+  @@map("import_logs")
+}
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+
+model SearchLog {
+  id          String   @id @default(cuid())
+  query       String
+  resultCount Int      @default(0)
+  source      String   @default("internal") // "internal", "youtube", "hybrid"
+  userId      String?
+  sessionId   String?
+  ipHash      String?
+  createdAt   DateTime @default(now())
+
+  @@index([query])
+  @@index([createdAt])
+  @@map("search_logs")
+}
+
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  adId      String?
+  userId    String?
+  sessionId String?
+  ipHash    String?
+  userAgent String?
+  referer   String?
+  createdAt DateTime @default(now())
+
+  @@index([adId])
+  @@index([path])
+  @@index([createdAt])
+  @@map("page_views")
+}
