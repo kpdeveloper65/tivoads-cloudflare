@@ -104,9 +104,9 @@ export default function ImportPage() {
               onChange={(e) => setDefaultStatus(e.target.value)}
               className="bg-white/5 border border-white/10 text-white rounded-xl px-4 py-2.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-brand-500"
             >
-              <option value="PUBLISHED">Published</option>
-              <option value="PENDING">Pending Review</option>
-              <option value="DRAFT">Draft</option>
+              <option value="PUBLISHED" className="bg-zinc-900 text-white">Published</option>
+              <option value="PENDING" className="bg-zinc-900 text-white">Pending Review</option>
+              <option value="DRAFT" className="bg-zinc-900 text-white">Draft</option>
             </select>
           </div>
           <div className="flex items-center gap-3 pt-5">
@@ -167,7 +167,7 @@ export default function ImportPage() {
       <button
         onClick={handleImport}
         disabled={!file || isImporting}
-        className="btn btn-primary btn-lg w-full disabled:opacity-50 disabled:cursor-not-allowed"
+        className="btn btn-primary btn-lg w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isImporting ? (
           <>
@@ -222,11 +222,11 @@ export default function ImportPage() {
           )}
 
           <div className="flex gap-3 mt-4">
-            <Link href="/admin/import/logs" className="btn btn-sm border border-white/20 text-white hover:bg-white/10">
+            <Link href="/admin/import/logs" className="btn btn-sm border border-white/20 text-white hover:bg-white/10 flex items-center gap-1.5">
               <FileText className="w-4 h-4" />
               View Import Logs
             </Link>
-            <Link href="/admin/ads" className="btn btn-sm btn-primary">
+            <Link href="/admin/ads" className="btn btn-sm btn-primary flex items-center gap-1.5">
               <ArrowRight className="w-4 h-4" />
               View Imported Ads
             </Link>

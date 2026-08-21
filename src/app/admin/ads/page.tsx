@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-async function getAds(searchParams: any) {
+async function getAds(searchParams: { page?: string; status?: string; search?: string }) {
   const page = parseInt(searchParams.page || '1');
   const status = searchParams.status || undefined;
   const search = searchParams.search || undefined;
@@ -46,8 +46,13 @@ async function getAds(searchParams: any) {
   return { ads, total, page, limit };
 }
 
-export default async function AdsPage({ searchParams }: { searchParams: any }) {
-  const { ads, total, page, limit } = await getAds(searchParams);
+export default async function AdsPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ page?: string; status?: string; search?: string }> 
+}) {
+  const resolvedSearchParams = await searchParams;
+  const { ads, total, page, limit } = await getAds(resolvedSearchParams);
   const totalPages = Math.ceil(total / limit);
 
   const statuses = [
@@ -98,7 +103,7 @@ export default async function AdsPage({ searchParams }: { searchParams: any }) {
           <input
             type="text"
             placeholder="Search ads by title or brand..."
-            defaultValue={searchParams.search || ''}
+            defaultValue={resolvedSearchParams.search || ''}
             className="w-full pl-10 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-500/50"
           />
         </div>
@@ -108,7 +113,7 @@ export default async function AdsPage({ searchParams }: { searchParams: any }) {
               key={status.value}
               href={`/admin/ads?status=${status.value}`}
               className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-                searchParams.status === status.value
+                resolvedSearchParams.status === status.value
                   ? `bg-${status.color}-500/20 text-${status.color}-400 border border-${status.color}-500/30`
                   : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
               }`}
@@ -197,7 +202,7 @@ export default async function AdsPage({ searchParams }: { searchParams: any }) {
           <div className="flex gap-2">
             {page > 1 && (
               <Link
-                href={`/admin/ads?page=${page - 1}${searchParams.status ? `&status=${searchParams.status}` : ''}`}
+                href={`/admin/ads?page=${page - 1}${resolvedSearchParams.status ? `&status=${resolvedSearchParams.status}` : ''}`}
                 className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 text-sm"
               >
                 Previous
@@ -208,7 +213,7 @@ export default async function AdsPage({ searchParams }: { searchParams: any }) {
               return (
                 <Link
                   key={pageNum}
-                  href={`/admin/ads?page=${pageNum}${searchParams.status ? `&status=${searchParams.status}` : ''}`}
+                  href={`/admin/ads?page=${pageNum}${resolvedSearchParams.status ? `&status=${resolvedSearchParams.status}` : ''}`}
                   className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm transition-all ${
                     pageNum === page
                       ? 'bg-brand-500 text-white'
@@ -221,7 +226,7 @@ export default async function AdsPage({ searchParams }: { searchParams: any }) {
             })}
             {page < totalPages && (
               <Link
-                href={`/admin/ads?page=${page + 1}${searchParams.status ? `&status=${searchParams.status}` : ''}`}
+                href={`/admin/ads?page=${page + 1}${resolvedSearchParams.status ? `&status=${resolvedSearchParams.status}` : ''}`}
                 className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 text-sm"
               >
                 Next

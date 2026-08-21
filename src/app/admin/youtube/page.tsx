@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Youtube, Download, CheckCircle, XCircle, AlertTriangle, Eye, ExternalLink } from 'lucide-react';
+import { Youtube, CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 import prisma from '@/lib/prisma';
-import { formatDate, formatDuration, formatNumber } from '@/lib/utils';
+import { formatDuration, formatNumber } from '@/lib/utils';
 import { YouTubeAdminActions } from './YouTubeAdminActions';
 
 export const metadata: Metadata = {
@@ -11,14 +11,15 @@ export const metadata: Metadata = {
 };
 
 interface YouTubeQueueProps {
-  searchParams: { status?: string; page?: string };
+  searchParams: Promise<{ status?: string; page?: string }>;
 }
 
 const PAGE_SIZE = 20;
 
 export default async function YouTubeQueuePage({ searchParams }: YouTubeQueueProps) {
-  const status = searchParams.status || 'CANDIDATE';
-  const page = parseInt(searchParams.page || '1');
+  const resolvedSearchParams = await searchParams;
+  const status = resolvedSearchParams.status || 'CANDIDATE';
+  const page = parseInt(resolvedSearchParams.page || '1');
   const skip = (page - 1) * PAGE_SIZE;
 
   const [candidates, total, counts] = await Promise.all([
@@ -86,7 +87,7 @@ export default async function YouTubeQueuePage({ searchParams }: YouTubeQueuePro
               className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden hover:border-white/20 transition-all duration-200"
             >
               {/* Thumbnail */}
-              <div className="relative aspect-video bg-dark-900">
+              <div className="relative aspect-video bg-black">
                 {candidate.thumbnailUrl ? (
                   <img
                     src={candidate.thumbnailUrl}
@@ -109,9 +110,9 @@ export default async function YouTubeQueuePage({ searchParams }: YouTubeQueuePro
 
                 {/* Duplicate flag */}
                 {candidate.possibleDuplicateId && (
-                  <div className="absolute top-2 left-2 badge bg-amber-500/20 text-amber-400">
+                  <div className="absolute top-2 left-2 flex items-center gap-1 badge bg-amber-500/20 text-amber-400">
                     <AlertTriangle className="w-3 h-3" />
-                    Possible Duplicate
+                    Duplicate
                   </div>
                 )}
               </div>
@@ -133,7 +134,7 @@ export default async function YouTubeQueuePage({ searchParams }: YouTubeQueuePro
                 {status === 'IMPORTED' && candidate.importedAdId && (
                   <Link
                     href={`/admin/ads/${candidate.importedAdId}`}
-                    className="btn btn-sm bg-emerald-500/20 text-emerald-400 w-full"
+                    className="btn btn-sm bg-emerald-500/20 text-emerald-400 w-full flex items-center justify-center gap-1.5"
                   >
                     <CheckCircle className="w-3.5 h-3.5" />
                     View Imported Ad
@@ -141,10 +142,10 @@ export default async function YouTubeQueuePage({ searchParams }: YouTubeQueuePro
                 )}
 
                 {status === 'REJECTED' && (
-                  <p className="text-xs text-white/30 text-center">Rejected</p>
+                  <p className="text-xs text-white/30 text-center py-2">Rejected</p>
                 )}
 
-                <div className="mt-2 flex justify-center">
+                <div className="mt-3 flex justify-center">
                   <a
                     href={`https://youtube.com/watch?v=${candidate.videoId}`}
                     target="_blank"
@@ -163,11 +164,6 @@ export default async function YouTubeQueuePage({ searchParams }: YouTubeQueuePro
         <div className="text-center py-16">
           <Youtube className="w-12 h-12 text-white/20 mx-auto mb-3" />
           <p className="text-white/30">No {status.toLowerCase()} videos in the queue.</p>
-          {status === 'CANDIDATE' && (
-            <p className="text-white/20 text-sm mt-2">
-              YouTube videos appear here when users search and results are submitted for review.
-            </p>
-          )}
         </div>
       )}
 
@@ -177,7 +173,7 @@ export default async function YouTubeQueuePage({ searchParams }: YouTubeQueuePro
           {page > 1 && (
             <Link href={`/admin/youtube?status=${status}&page=${page - 1}`} className="btn btn-sm border border-white/10 text-white hover:bg-white/10">← Prev</Link>
           )}
-          <span className="text-sm text-white/30">Page {page} of {totalPages}</span>
+          <span className="text-sm text-white/30 px-2">Page {page} of {totalPages}</span>
           {page < totalPages && (
             <Link href={`/admin/youtube?status=${status}&page=${page + 1}`} className="btn btn-sm border border-white/10 text-white hover:bg-white/10">Next →</Link>
           )}

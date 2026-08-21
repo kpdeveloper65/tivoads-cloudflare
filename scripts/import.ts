@@ -111,7 +111,7 @@ async function runImport(config: ImportConfig) {
       fileType: config.file.endsWith('.json') ? 'json' : 'csv',
       totalRecords: total,
       status: 'PROCESSING',
-      config: config as any,
+      config: JSON.stringify(config),
     },
   });
 
@@ -129,13 +129,24 @@ async function runImport(config: ImportConfig) {
       const title = (row.title || '').trim();
       if (!title) { skipped++; continue; }
 
-      // Skip Duplicates Check
+      // --- 1. Skip Duplicates Check ---
       if (config.skipDuplicates) {
         const existing = await prisma.ad.findFirst({
-          where: { title: { equals: title, mode: 'insensitive' } },
-          select: { id: true }
+          where: {
+            title: {
+              equals: title, // 👈 Removed unsupported "mode: 'insensitive'" parameter for SQLite
+            }
+          },
+          select: {
+            id: true
+          }
         });
-        if (existing) { duplicates++; continue; }
+
+        if (existing) {
+          duplicates++;
+          errors.push(`Row ${rowNumber}: Duplicate found for title "${title}"`);
+          continue;
+        }
       }
 
       if (config.dryRun) { imported++; continue; }
@@ -236,13 +247,18 @@ async function runImport(config: ImportConfig) {
   // --- 3. FINALIZATION ---
   if (batch) {
     await prisma.importBatch.update({
-      where: { id: batch.id },
-      data: {
-        status: failed === total ? 'FAILED' : 'COMPLETED',
-        imported, skipped, failed, duplicates,
-        errorLog: errors.slice(0, 100) as any,
-        completedAt: new Date(),
+      where: {
+        id: batch.id
       },
+      data: {
+        status: failed > 0 && imported === 0 ? "FAILED" : "COMPLETED",
+        imported: imported,
+        skipped: skipped,
+        failed: failed,
+        duplicates: duplicates,
+        errorLog: errors.length > 0 ? errors.join('\n') : null, // 👈 Converted string array to joined string for SQLite String? type[cite: 1]
+        completedAt: new Date()
+      }
     });
 
     console.log('\n\n📊 Refreshing stats counters...');

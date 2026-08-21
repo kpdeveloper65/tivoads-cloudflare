@@ -36,6 +36,10 @@ export function getDb() {
   return prisma;
 }
 
+export function getPrisma() {
+  return prisma;
+}
+
 // Add cached helper to resolve import errors in brand pages
 export const getCachedBrand = cache(async (slug: string) => {
   return prisma.brand.findUnique({

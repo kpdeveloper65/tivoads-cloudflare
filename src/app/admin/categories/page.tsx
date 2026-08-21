@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-async function getCategories(searchParams: any) {
+async function getCategories(searchParams: { search?: string; page?: string }) {
   const search = searchParams.search || undefined;
   const page = parseInt(searchParams.page || '1');
   const limit = 20;
@@ -42,8 +42,13 @@ async function getCategories(searchParams: any) {
   return { categories, total, page, limit };
 }
 
-export default async function CategoriesPage({ searchParams }: { searchParams: any }) {
-  const { categories, total, page, limit } = await getCategories(searchParams);
+export default async function CategoriesPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ search?: string; page?: string }> 
+}) {
+  const resolvedSearchParams = await searchParams;
+  const { categories, total, page, limit } = await getCategories(resolvedSearchParams);
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -87,7 +92,7 @@ export default async function CategoriesPage({ searchParams }: { searchParams: a
           <input
             type="text"
             placeholder="Search categories..."
-            defaultValue={searchParams.search || ''}
+            defaultValue={resolvedSearchParams.search || ''}
             className="w-full pl-10 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-500/50"
           />
         </div>

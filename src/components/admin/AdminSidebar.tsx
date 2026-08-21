@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { label: 'Ads', href: '/admin/ads', icon: Video },
   { label: 'Brands', href: '/admin/brands', icon: Building2 },
   { label: 'Categories', href: '/admin/categories', icon: Grid3x3 },
-  { label: 'Tags', href: '/admin/tags', icon: Tag },
+  // { label: 'Tags', href: '/admin/tags', icon: Tag },
   { label: 'Users', href: '/admin/users', icon: Users, adminOnly: true },
   null, // separator
   { label: 'YouTube Queue', href: '/admin/youtube', icon: Youtube },

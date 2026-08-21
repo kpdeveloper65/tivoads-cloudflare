@@ -11,11 +11,12 @@ export const metadata: Metadata = {
 };
 
 interface SubmissionsPageProps {
-  searchParams: { status?: string };
+  searchParams: Promise<{ status?: string }>;
 }
 
 export default async function SubmissionsPage({ searchParams }: SubmissionsPageProps) {
-  const status = searchParams.status || 'PENDING';
+  const resolvedSearchParams = await searchParams;
+  const status = resolvedSearchParams.status || 'PENDING';
 
   const [submissions, counts] = await Promise.all([
     prisma.submission.findMany({

@@ -40,8 +40,8 @@ export function YouTubeAdminActions({ candidateId, videoId, title }: YouTubeAdmi
 
   if (status === 'imported') {
     return (
-      <div className="flex items-center gap-1.5 text-emerald-400 text-sm">
-        <CheckCircle className="w-4 h-4" />
+      <div className="flex items-center justify-center gap-1.5 text-emerald-400 text-sm py-1">
+        <CheckCircle className="w-4 h-4 flex-shrink-0" />
         Imported to database
       </div>
     );
@@ -49,8 +49,8 @@ export function YouTubeAdminActions({ candidateId, videoId, title }: YouTubeAdmi
 
   if (status === 'rejected') {
     return (
-      <div className="flex items-center gap-1.5 text-white/30 text-sm">
-        <XCircle className="w-4 h-4" />
+      <div className="flex items-center justify-center gap-1.5 text-white/30 text-sm py-1">
+        <XCircle className="w-4 h-4 flex-shrink-0" />
         Rejected
       </div>
     );
@@ -58,26 +58,26 @@ export function YouTubeAdminActions({ candidateId, videoId, title }: YouTubeAdmi
 
   return (
     <div className="space-y-2">
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-red-400 text-center">{error}</p>}
       <div className="flex gap-2">
         <button
           onClick={() => handleAction('import')}
           disabled={status === 'loading'}
-          className="flex-1 btn btn-sm bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 border border-brand-500/20 disabled:opacity-50"
+          className="flex-1 btn btn-sm bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 border border-brand-500/20 disabled:opacity-50 flex items-center justify-center gap-1.5"
         >
           {status === 'loading' ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : (
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3.5 h-3.5 flex-shrink-0" />
           )}
           Import
         </button>
         <button
           onClick={() => handleAction('reject')}
           disabled={status === 'loading'}
-          className="flex-1 btn btn-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 disabled:opacity-50"
+          className="flex-1 btn btn-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 disabled:opacity-50 flex items-center justify-center gap-1.5"
         >
-          <XCircle className="w-3.5 h-3.5" />
+          <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
           Reject
         </button>
       </div>

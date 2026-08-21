@@ -13,7 +13,11 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-async function getUsers(searchParams: any) {
+interface UsersPageProps {
+  searchParams: Promise<{ search?: string; page?: string }>;
+}
+
+async function getUsers(searchParams: { search?: string; page?: string }) {
   const search = searchParams.search || undefined;
   const page = parseInt(searchParams.page || '1');
   const limit = 20;
@@ -50,15 +54,10 @@ async function getUsers(searchParams: any) {
   return { users, total, page, limit };
 }
 
-export default async function UsersPage({ searchParams }: { searchParams: any }) {
-  const { users, total, page, limit } = await getUsers(searchParams);
+export default async function UsersPage({ searchParams }: UsersPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const { users, total, page, limit } = await getUsers(resolvedSearchParams);
   const totalPages = Math.ceil(total / limit);
-
-  const roles = [
-    { value: 'ADMIN', label: 'Admin', color: 'purple' },
-    { value: 'MODERATOR', label: 'Moderator', color: 'blue' },
-    { value: 'USER', label: 'User', color: 'slate' },
-  ];
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
@@ -68,7 +67,7 @@ export default async function UsersPage({ searchParams }: { searchParams: any })
           <h1 className="text-2xl font-bold text-white">User Management</h1>
           <p className="text-white/40 text-sm mt-1">Manage all users and permissions</p>
         </div>
-        <Link href="/admin/users/new" className="btn btn-primary btn-md">
+        <Link href="/admin/users/new" className="btn btn-primary btn-md flex items-center gap-2">
           <Plus className="w-4 h-4" />
           Add User
         </Link>
@@ -96,15 +95,16 @@ export default async function UsersPage({ searchParams }: { searchParams: any })
 
       {/* Search */}
       <div className="mb-6">
-        <div className="relative">
+        <form method="GET" className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
           <input
             type="text"
+            name="search"
             placeholder="Search users by name or email..."
-            defaultValue={searchParams.search || ''}
-            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-500/50"
+            defaultValue={resolvedSearchParams.search || ''}
+            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-brand-500/50 text-sm"
           />
-        </div>
+        </form>
       </div>
 
       {/* Table */}
@@ -134,7 +134,7 @@ export default async function UsersPage({ searchParams }: { searchParams: any })
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-sm text-white/60">
-                      <Mail className="w-4 h-4" />
+                      <Mail className="w-4 h-4 flex-shrink-0" />
                       {user.email}
                     </div>
                   </td>
@@ -193,7 +193,7 @@ export default async function UsersPage({ searchParams }: { searchParams: any })
           <div className="flex gap-2">
             {page > 1 && (
               <Link
-                href={`/admin/users?page=${page - 1}`}
+                href={`/admin/users?page=${page - 1}${resolvedSearchParams.search ? `&search=${resolvedSearchParams.search}` : ''}`}
                 className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 text-sm"
               >
                 Previous
@@ -204,7 +204,7 @@ export default async function UsersPage({ searchParams }: { searchParams: any })
               return (
                 <Link
                   key={pageNum}
-                  href={`/admin/users?page=${pageNum}`}
+                  href={`/admin/users?page=${pageNum}${resolvedSearchParams.search ? `&search=${resolvedSearchParams.search}` : ''}`}
                   className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm transition-all ${
                     pageNum === page
                       ? 'bg-brand-500 text-white'
@@ -217,7 +217,7 @@ export default async function UsersPage({ searchParams }: { searchParams: any })
             })}
             {page < totalPages && (
               <Link
-                href={`/admin/users?page=${page + 1}`}
+                href={`/admin/users?page=${page + 1}${resolvedSearchParams.search ? `&search=${resolvedSearchParams.search}` : ''}`}
                 className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 text-sm"
               >
                 Next

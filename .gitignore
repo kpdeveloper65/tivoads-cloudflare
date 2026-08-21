@@ -7,6 +7,7 @@ cloudflare-env.d.ts
 # --- Next.js Core ---
 .next/
 out/
+prisma/dev.db
 
 # --- Dependencies & Package Managers ---
 node_modules/
