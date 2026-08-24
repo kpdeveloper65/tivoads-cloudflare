@@ -11,6 +11,7 @@ import { readFile } from 'fs/promises';
 import { basename, resolve } from 'path';
 import csvParser from 'csv-parser';
 import { execSync } from 'child_process';
+import { randomBytes } from 'crypto';
 
 const isRemote = process.argv.includes('--remote');
 
@@ -138,8 +139,6 @@ async function runImport(config: ImportConfig) {
   const sqlChunks: string[][] = [];
   let currentChunk: string[] = [];
 
-  currentChunk.push('PRAGMA foreign_keys = OFF;');
-  currentChunk.push('BEGIN TRANSACTION;');
   currentChunk.push(`
     INSERT INTO "import_batches" ("id", "name", "fileName", "fileType", "totalRecords", "status", "createdAt", "updatedAt")
     VALUES ('${batchId}', 'CLI Import: ${basename(config.file)}', '${basename(config.file)}', '${config.file.endsWith('.json') ? 'json' : 'csv'}', ${total}, 'PROCESSING', datetime('now'), datetime('now'));
@@ -159,14 +158,17 @@ async function runImport(config: ImportConfig) {
       continue; 
     }
 
-    // --- Duplicate Check matching Prisma script logic ---
     const lowerTitle = title.toLowerCase();
     if (existingTitles.has(lowerTitle)) {
       duplicates++;
-      continue; // Skip inserting this duplicate record
+      continue;
     }
-    // Prevent inserting duplicates within the same batch file upload payload too
     existingTitles.add(lowerTitle);
+
+    // Guaranteed globally unique primary key to prevent multi-file collisions
+    const randomSuffix = randomBytes(4).toString('hex');
+    const recordId = `ad-${Date.now()}-${i}-${randomSuffix}`;
+    const originalSourceId = row.id ? String(row.id).trim() : '';
 
     const brandName = (row.brand || '').trim();
     let brandId: string | null = null;
@@ -208,8 +210,7 @@ async function runImport(config: ImportConfig) {
     const sourceType = ytId ? 'YOUTUBE' : (row.source_type || 'IMPORTED');
 
     const baseSlug = row.slug || slugifyText(title);
-    const finalSlug = `${baseSlug}-${i + 1}`;
-    const recordId = row.id || `ad-${i + 1}`;
+    const finalSlug = `${baseSlug}-${randomBytes(2).toString('hex')}`;
 
     const descShort = sqlSanitize(row.description?.slice(0, 500) || '');
     const descLong = sqlSanitize(row.description_long || '');
@@ -229,7 +230,7 @@ async function runImport(config: ImportConfig) {
         '${recordId}', '${finalSlug}', '${sqlSanitize(title)}', ${brandId ? `'${brandId}'` : 'NULL'}, ${categoryId ? `'${categoryId}'` : 'NULL'},
         '${descShort}', '${descLong}', '${campaign}', '${slogan}', '${sqlSanitize(videoUrl)}', '${sqlSanitize(embedUrl)}',
         '${thumbUrl}', '${extVideoId}', ${duration}, ${year ? year : 'NULL'}, '${sourceType}', '${config.status}',
-        '${batchId}', '${sqlSanitize(row.original_id || row.id || '')}', datetime('now'), datetime('now')
+        '${batchId}', '${sqlSanitize(originalSourceId || row.original_id || '')}', datetime('now'), datetime('now')
       );
     `);
 
@@ -257,23 +258,19 @@ async function runImport(config: ImportConfig) {
 
     imported++;
 
-    // Track records per chunk accurately using modular imported count
     if (imported % RECORDS_PER_CHUNK === 0 || i === total - 1) {
-      currentChunk.push('COMMIT;');
       sqlChunks.push(currentChunk);
-      currentChunk = ['PRAGMA foreign_keys = OFF;', 'BEGIN TRANSACTION;'];
+      currentChunk = [];
     }
   }
 
-  // Handle edge case where all items might have been skipped or array was empty
   if (sqlChunks.length === 0) {
     console.log(`⚠️ No new records to import.`);
     return;
   }
 
-  // Append batch completion status metadata to the final chunk
   const lastChunk = sqlChunks[sqlChunks.length - 1];
-  lastChunk.splice(lastChunk.length - 1, 0, `
+  lastChunk.push(`
     UPDATE "import_batches" SET "status" = 'COMPLETED', "imported" = ${imported}, "skipped" = ${skipped}, "duplicates" = ${duplicates}, "completedAt" = datetime('now') WHERE "id" = '${batchId}';
   `);
 
