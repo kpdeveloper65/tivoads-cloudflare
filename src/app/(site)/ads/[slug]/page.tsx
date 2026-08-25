@@ -4,6 +4,8 @@ import { getDb } from '@/lib/prisma';
 import { AdDetailClient } from './AdDetailClient';
 import { getAbsoluteUrl } from '@/lib/utils';
 
+export const dynamicParams = true;
+
 interface AdPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -141,11 +143,16 @@ export default async function AdPage({ params }: AdPageProps) {
 }
 
 export async function generateStaticParams() {
-  const prisma = await getDb();
-  const ads = await prisma.ad.findMany({
-    where: { status: 'PUBLISHED' },
-    select: { slug: true },
-    take: 1000,
-  });
-  return ads.map((ad) => ({ slug: ad.slug }));
+  try {
+    const prisma = await getDb();
+    const ads = await prisma.ad.findMany({
+      where: { status: 'PUBLISHED' },
+      select: { slug: true },
+      take: 1000,
+    });
+    return ads.map((ad) => ({ slug: ad.slug }));
+  } catch (error) {
+    console.warn("Skipping static params generation during build due to D1 availability:", error);
+    return [];
+  }
 }
