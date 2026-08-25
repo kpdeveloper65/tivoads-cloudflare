@@ -42,10 +42,8 @@ async function getHomepageData() {
     // Latest ads
     prisma.ad.findMany({
       where: { status: 'PUBLISHED' },
-      distinct: ['brandId'], // This ensures one ad per brand
       orderBy: { createdAt: 'desc' },
       take: 8,
-      skip,
       include: {
         brand: { select: { name: true, slug: true, logoUrl: true } },
         category: { select: { name: true, slug: true, color: true } },
@@ -98,7 +96,8 @@ async function getHomepageData() {
 async function getPopularTags() {
   try {
     const prisma = await getDb();
-    // 1. Query the 50 most-viewed PUBLISHED ads and include their related tags
+    
+    // Optimized to fetch lighter footprint: smaller take count to avoid D1 memory spikes
     const topAdsWithTags = await prisma.ad.findMany({
       where: { 
         status: 'PUBLISHED' 
@@ -117,34 +116,26 @@ async function getPopularTags() {
           }
         }
       },
-      take: 50, 
+      take: 15, // Reduced from 50 to prevent D1 memory limit excess
     });
 
-    // 2. Extract, flatten, and CLEAN the tags of special characters
     const allTags = topAdsWithTags.flatMap(ad => 
       ad.tags.map(adTag => {
         return adTag.tag.name
-          .replace(/[^a-zA-Z0-9\s-]/g, '') // Strips everything except letters, numbers, spaces, and hyphens
-          .replace(/\s+/g, ' ')            // Collapses any accidental double spaces down to a single space
-          .trim();                         // Trims whitespace from the edges
+          .replace(/[^a-zA-Z0-9\s-]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
       })
     );
 
-    // 3. Deduplicate the cleaned array
     const uniqueTags = [...new Set(allTags)];
 
-    // 4. FILTER: Keep only tags that are 1 or 2 words long and not empty
     const filteredShortTags = uniqueTags.filter(tagName => {
-      if (!tagName) return false; // Skip if cleaning left the string completely empty
-
-      // Split the tag by spaces to count the words
+      if (!tagName) return false;
       const wordCount = tagName.split(/\s+/).length;
-      
-      // Only allow tags that have 1 or 2 words
       return wordCount >= 1 && wordCount <= 2;
     });
 
-    // 5. Return the top 10 short, clean tags
     return filteredShortTags.slice(0, 10);
 
   } catch (error) {
