@@ -9,8 +9,8 @@
     "binding": "ASSETS"
   },
   "vars": {
-    "NEXTAUTH_URL": "https://tivoads-cloudflare.largestlimit.workers.dev/",
-    "NEXT_PUBLIC_APP_URL": "https://tivoads-cloudflare.largestlimit.workers.dev/",
+    "NEXTAUTH_URL": "https://tivoads-cloudflare.largestlimit.workers.dev",
+    "NEXT_PUBLIC_APP_URL": "https://tivoads-cloudflare.largestlimit.workers.dev",
     "NEXT_PUBLIC_APP_NAME": "tivoads",
     "NEXT_PUBLIC_APP_DESCRIPTION": "The Premium Ad Discovery & Research Library",
   },
