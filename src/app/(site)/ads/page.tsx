@@ -32,22 +32,11 @@ export default async function AdsPage({ searchParams }: AdsPageProps) {
   if (year) where.year = year;
   if (source) where.sourceType = source.toUpperCase();
 
-  // 2. Daily Seed Logic
-  const today = new Date().toISOString().slice(0, 10);
-  const seed = Number(today.replace(/-/g, ''));
+  // 2. Count Total Published Ads directly for accurate pagination
+  const total = await prisma.ad.count({ where });
 
-  // 3. Count Unique Brands (Essential for correct pagination with 'distinct')
-  const brandGroups = await prisma.ad.groupBy({
-    by: ['brandId'],
-    where,
-  });
-  const total = brandGroups.length;
-
-  // 4. Global Daily Shuffle
-  // This calculates a shift based on the day. 
-  // It wraps around using the modulo operator so skip never exceeds the total.
-  const dailyOffset = seed % Math.max(total, 1);
-  const skip = ((page - 1) * PAGE_SIZE + dailyOffset) % Math.max(total, 1);
+  // 3. Standard Safe Offset Pagination
+  const skip = (page - 1) * PAGE_SIZE;
 
   const orderByMap: any = {
     newest: [{ createdAt: 'desc' }],
@@ -57,11 +46,10 @@ export default async function AdsPage({ searchParams }: AdsPageProps) {
     favorites: [{ favoriteCount: 'desc' }],
   };
 
-  // 5. Database Query
+  // 4. Database Query (Optimized without heavy distinct/memory traps)
   const [ads, availableYears] = await Promise.all([
     prisma.ad.findMany({
       where,
-      distinct: ['brandId'], // 🔥 Strict: Only one video per brand
       orderBy: orderByMap[sort] || orderByMap.newest,
       skip,
       take: PAGE_SIZE,
@@ -102,7 +90,7 @@ export default async function AdsPage({ searchParams }: AdsPageProps) {
         <div className="section-container py-8">
           <h1 className="heading-3 text-foreground mb-1">Browse All Ads</h1>
           <p className="text-muted-foreground">
-            {total.toLocaleString()} brands available today
+            {total.toLocaleString()} ads available
           </p>
         </div>
       </div>

@@ -13,17 +13,35 @@ export const revalidate = 3600;
 export default async function BrandsPage() {
   const prisma = await getDb();
   
-  const brands = await prisma.brand.findMany({
-    where: { isActive: true, adCount: { gt: 0 } },
-    orderBy: [{ adCount: 'desc' }, { name: 'asc' }],
+  // Fetch brands and count their published ads dynamically
+  const brandsData = await prisma.brand.findMany({
+    where: { isActive: true },
+    include: {
+      _count: {
+        select: {
+          ads: {
+            where: { status: 'PUBLISHED' },
+          },
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
   });
+
+  // Map and filter for brands that actually have real ads
+  const brands = brandsData
+    .map((brand) => ({
+      ...brand,
+      realAdCount: brand._count.ads,
+    }))
+    .filter((brand) => brand.realAdCount > 0)
+    .sort((a, b) => b.realAdCount - a.realAdCount || a.name.localeCompare(b.name));
 
   const grouped = brands.reduce((acc, brand) => {
     const letter = brand.name[0].toUpperCase();
     if (!acc[letter]) acc[letter] = [];
     
-    // Updated limit to 32 as requested
-    if (acc[letter].length < 32) { 
+    if (acc[letter].length < 32) {  
       acc[letter].push(brand);
     }
     
@@ -49,17 +67,19 @@ export default async function BrandsPage() {
 
       <div className="section-container py-12">
         {/* Alphabet jump */}
-        <div className="flex flex-wrap gap-1.5 mb-8">
-          {letters.map((letter) => (
-            <a
-              key={letter}
-              href={`#letter-${letter}`}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-semibold bg-secondary hover:bg-brand-500/10 hover:text-brand-500 transition-colors"
-            >
-              {letter}
-            </a>
-          ))}
-        </div>
+        {letters.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-8">
+            {letters.map((letter) => (
+              <a
+                key={letter}
+                href={`#letter-${letter}`}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-semibold bg-secondary hover:bg-brand-500/10 hover:text-brand-500 transition-colors"
+              >
+                {letter}
+              </a>
+            ))}
+          </div>
+        )}
 
         {/* Brand groups */}
         <div className="space-y-10">
@@ -71,7 +91,11 @@ export default async function BrandsPage() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {grouped[letter].map((brand) => (
-                  <BrandCard key={brand.id} brand={brand} variant="default" />
+                  <BrandCard 
+                    key={brand.id} 
+                    brand={{ ...brand, adCount: brand.realAdCount }} 
+                    variant="default" 
+                  />
                 ))}
               </div>
             </div>

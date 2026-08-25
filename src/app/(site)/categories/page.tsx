@@ -13,13 +13,28 @@ export const revalidate = 3600;
 export default async function CategoriesPage() {
   const prisma = await getDb();
   
-  const categories = await prisma.category.findMany({
+  // Fetch categories and count their published ads dynamically
+  const categoriesData = await prisma.category.findMany({
     where: { isActive: true },
-    orderBy: [{ adCount: 'desc' }, { name: 'asc' }],
+    include: {
+      _count: {
+        select: {
+          ads: {
+            where: { status: 'PUBLISHED' },
+          },
+        },
+      },
+    },
   });
 
-  const activeCategories = categories.filter((c) => c.adCount > 0);
-  const emptyCategories = categories.filter((c) => c.adCount === 0);
+  // Map the dynamic count to a clean property and sort by active ads desc
+  const categories = categoriesData.map((cat) => ({
+    ...cat,
+    realAdCount: cat._count.ads,
+  })).sort((a, b) => b.realAdCount - a.realAdCount || a.name.localeCompare(b.name));
+
+  const activeCategories = categories.filter((c) => c.realAdCount > 0);
+  const emptyCategories = categories.filter((c) => c.realAdCount === 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,7 +58,11 @@ export default async function CategoriesPage() {
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {activeCategories.map((cat) => (
-                <CategoryCard key={cat.id} category={cat} variant="large" />
+                <CategoryCard 
+                  key={cat.id} 
+                  category={{ ...cat, adCount: cat.realAdCount }} 
+                  variant="large" 
+                />
               ))}
             </div>
           </div>
