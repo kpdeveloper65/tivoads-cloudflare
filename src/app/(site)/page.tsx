@@ -93,11 +93,12 @@ async function getHomepageData() {
   };
 }
 
+
+
 async function getPopularTags() {
   try {
     const prisma = await getDb();
     
-    // Optimized to fetch lighter footprint: smaller take count to avoid D1 memory spikes
     const topAdsWithTags = await prisma.ad.findMany({
       where: { 
         status: 'PUBLISHED' 
@@ -116,33 +117,54 @@ async function getPopularTags() {
           }
         }
       },
-      take: 15, // Reduced from 50 to prevent D1 memory limit excess
+      take: 15,
     });
 
+    const stopWords = new Set([
+      'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 
+      'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 
+      'her', 'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 
+      'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', 
+      'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 
+      'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 
+      'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 
+      'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 
+      'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 
+      'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 
+      'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 
+      'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 
+      'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 
+      'can', 'will', 'just', 'don', 'should', 'now', 'am', 'us', 'are', 'it'
+    ]);
+
     const allTags = topAdsWithTags.flatMap(ad => 
-      ad.tags.map(adTag => {
-        return adTag.tag.name
+      ad.tags.flatMap(adTag => {
+        // Clean tag name and split into individual words to extract single words
+        const cleaned = adTag.tag.name
           .replace(/[^a-zA-Z0-9\s-]/g, '')
           .replace(/\s+/g, ' ')
           .trim();
+
+        return cleaned.split(/\s+/);
       })
     );
 
-    const uniqueTags = [...new Set(allTags)];
+    const uniqueSingleWords = [...new Set(allTags)];
 
-    const filteredShortTags = uniqueTags.filter(tagName => {
-      if (!tagName) return false;
-      const wordCount = tagName.split(/\s+/).length;
-      return wordCount >= 1 && wordCount <= 2;
+    const filteredWords = uniqueSingleWords.filter(word => {
+      if (!word || word.length <= 3) return false; // Ignore very short fragments
+      const lowerWord = word.toLowerCase();
+      return !stopWords.has(lowerWord);
     });
 
-    return filteredShortTags.slice(0, 10);
+    return filteredWords.slice(0, 10);
 
   } catch (error) {
     console.error("Error fetching popular tags:", error);
     return []; 
   }
 }
+
 
 export default async function HomePage() {
   const data = await getHomepageData();

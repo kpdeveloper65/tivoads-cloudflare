@@ -120,7 +120,7 @@ export default async function CategoriesPage({
                         <Tag className="w-4 h-4 text-brand-400" />
                       </div>
                       <Link
-                        href={`/admin/categories/${category.id}`}
+                        href={`/categories/${category.slug}`}
                         className="text-sm text-white/80 hover:text-brand-400 transition-colors font-medium"
                       >
                         {category.name}
@@ -137,7 +137,7 @@ export default async function CategoriesPage({
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Link
-                        href={`/admin/categories/${category.id}`}
+                        href={`/categories/${category.slug}`}
                         className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
                         title="View"
                       >

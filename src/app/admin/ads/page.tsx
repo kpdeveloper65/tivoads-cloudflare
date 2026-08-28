@@ -143,7 +143,7 @@ export default async function AdsPage({
                 <tr key={ad.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4">
                     <Link
-                      href={`/admin/ads/${ad.id}`}
+                      href={`/ads/${ad.slug}`}
                       className="text-sm text-white/80 hover:text-brand-400 transition-colors font-medium line-clamp-1"
                     >
                       {ad.title}
@@ -165,7 +165,7 @@ export default async function AdsPage({
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Link
-                        href={`/admin/ads/${ad.id}`}
+                        href={`/ads/${ad.slug}`}
                         className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
                         title="View"
                       >

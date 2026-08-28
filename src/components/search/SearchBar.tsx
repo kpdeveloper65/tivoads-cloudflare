@@ -16,8 +16,8 @@ interface SearchSuggestions {
 }
 
 const POPULAR_SEARCHES = [
-  'Super Bowl ads', 'Nike', 'Apple', 'Coca-Cola', 'emotional ads',
-  'viral commercials', 'holiday ads', 'funny ads',
+  'Super Bowl', 'Nike', 'Apple', 'Coca-Cola', 'emotional',
+  'commercials', 'holiday', 'funny',
 ];
 
 interface SearchBarProps {

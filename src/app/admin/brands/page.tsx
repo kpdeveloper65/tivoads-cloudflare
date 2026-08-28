@@ -127,7 +127,7 @@ export default async function BrandsPage({
                         </div>
                       )}
                       <Link
-                        href={`/admin/brands/${brand.id}`}
+                        href={`/brands/${brand.slug}`}
                         className="text-sm text-white/80 hover:text-brand-400 transition-colors font-medium"
                       >
                         {brand.name}
@@ -144,7 +144,7 @@ export default async function BrandsPage({
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Link
-                        href={`/admin/brands/${brand.id}`}
+                        href={`/brands/${brand.slug}`}
                         className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
                         title="View"
                       >

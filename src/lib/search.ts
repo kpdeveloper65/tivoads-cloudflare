@@ -53,34 +53,38 @@ export async function searchAds(filters: SearchFilters): Promise<SearchResult> {
   if (query && query.trim()) {
     const q = query.trim();
     where.OR = [
-      { title: { contains: q, mode: 'insensitive' } },
-      { descriptionShort: { contains: q, mode: 'insensitive' } },
-      { descriptionLong: { contains: q, mode: 'insensitive' } },
-      { campaign: { contains: q, mode: 'insensitive' } },
-      { slogan: { contains: q, mode: 'insensitive' } },
-      { brand: { name: { contains: q, mode: 'insensitive' } } },
-      { category: { name: { contains: q, mode: 'insensitive' } } },
-      { tags: { some: { tag: { name: { contains: q, mode: 'insensitive' } } } } },
+      { title: { contains: q } },
+      { descriptionShort: { contains: q } },
+      { descriptionLong: { contains: q } },
+      { campaign: { contains: q } },
+      { slogan: { contains: q } },
+      { brand: { name: { contains: q } } },
+      { category: { name: { contains: q } } },
+      { tags: { some: { tag: { name: { contains: q } } } } },
     ];
   }
 
-  // Category filter
+  // Category filter ( safely checking slug or exact name )
   if (category) {
     where.category = {
-      OR: [
-        { slug: category },
-        { name: { equals: category, mode: 'insensitive' } },
-      ],
+      is: {
+        OR: [
+          { slug: category },
+          { name: { equals: category } },
+        ],
+      },
     };
   }
 
-  // Brand filter
+  // Brand filter ( safely checking slug or exact name )
   if (brand) {
     where.brand = {
-      OR: [
-        { slug: brand },
-        { name: { equals: brand, mode: 'insensitive' } },
-      ],
+      is: {
+        OR: [
+          { slug: brand },
+          { name: { equals: brand } },
+        ],
+      },
     };
   }
 
@@ -133,7 +137,6 @@ export async function searchAds(filters: SearchFilters): Promise<SearchResult> {
     case 'relevance':
     default:
       if (query) {
-        // For relevance, prioritize featured, then trending, then views
         orderBy = [{ isFeatured: 'desc' }, { trendingScore: 'desc' }, { viewCount: 'desc' }];
       } else {
         orderBy = [{ createdAt: 'desc' }];
@@ -160,7 +163,7 @@ export async function searchAds(filters: SearchFilters): Promise<SearchResult> {
     prisma.ad.count({ where }),
   ]);
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.ceil(total / limit) || 1;
 
   return {
     ads,
@@ -190,7 +193,7 @@ export async function getSearchSuggestions(query: string): Promise<{
     prisma.ad.findMany({
       where: {
         status: 'PUBLISHED',
-        title: { contains: q, mode: 'insensitive' },
+        title: { contains: q },
       },
       select: { id: true, title: true, slug: true, thumbnailUrl: true },
       take: 5,
@@ -199,7 +202,7 @@ export async function getSearchSuggestions(query: string): Promise<{
     prisma.brand.findMany({
       where: {
         isActive: true,
-        name: { contains: q, mode: 'insensitive' },
+        name: { contains: q },
       },
       select: { id: true, name: true, slug: true },
       take: 3,
@@ -207,14 +210,14 @@ export async function getSearchSuggestions(query: string): Promise<{
     prisma.category.findMany({
       where: {
         isActive: true,
-        name: { contains: q, mode: 'insensitive' },
+        name: { contains: q },
       },
       select: { id: true, name: true, slug: true },
       take: 3,
     }),
     prisma.tag.findMany({
       where: {
-        name: { contains: q, mode: 'insensitive' },
+        name: { contains: q },
       },
       select: { id: true, name: true, slug: true },
       take: 3,
@@ -241,7 +244,6 @@ export async function logSearch(
       },
     });
   } catch (error) {
-    // Don't fail the search if logging fails
     console.error('Search logging error:', error);
   }
 }
