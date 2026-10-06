@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { headers } from 'next/headers'; 
 import { SearchResultsClient } from './SearchResultsClient';
 
 interface SearchPageProps {
@@ -17,7 +18,32 @@ interface SearchPageProps {
   }>;
 }
 
+// 1. Strict Allowlist Helper Function
+async function isDisallowedBot(): Promise<boolean> {
+  const headersList = await headers();
+  const userAgent = headersList.get('user-agent') || '';
+  const uaLower = userAgent.toLowerCase();
+
+  // Identify if the incoming traffic claims to be a crawler/bot
+  const isGenericBot = uaLower.includes('bot') || uaLower.includes('crawl') || uaLower.includes('spider');
+
+  // Explicitly define who is allowed
+  const isAllowedSearchEngine = uaLower.includes('googlebot') || uaLower.includes('bingbot');
+
+  // If it's a bot, but NOT Google or Bing, block it immediately
+  if (isGenericBot && !isAllowedSearchEngine) {
+    return true;
+  }
+
+  return false;
+}
+
 export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
+  // Fail early for disallowed bots to protect resources
+  if (await isDisallowedBot()) {
+    return { title: 'Access Denied', robots: { index: false, follow: false } };
+  }
+
   const { q } = await searchParams;
   const query = q || '';
   
@@ -36,7 +62,16 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  // Await the searchParams promise to use them
+  // 2. Terminate the request before rendering or executing database calls
+  if (await isDisallowedBot()) {
+    return (
+      <div className="section-container py-16 text-center">
+        <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
+        <p className="text-muted-foreground mt-2">Automated scraping traffic is prohibited on this endpoint.</p>
+      </div>
+    );
+  }
+
   const params = await searchParams;
   
   return (

@@ -1,0 +1,11 @@
+# Allow Google
+User-agent: Googlebot
+Allow: /
+
+# Allow Bing (powers Yahoo and DuckDuckGo)
+User-agent: Bingbot
+Allow: /
+
+# Disallow all other bots and scrapers
+User-agent: *
+Disallow: /

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { headers } from 'next/headers'; // 1. IMPORT HEADERS TO CAPTURE USER AGENT
 import { ArrowRight, TrendingUp, Sparkles, Search, Play, Youtube } from 'lucide-react';
 import { getDb } from '@/lib/prisma';
 import { SearchBar } from '@/components/search/SearchBar';
@@ -14,6 +15,32 @@ export const metadata: Metadata = {
 };
 
 export const revalidate = 300; // 5 minutes
+
+
+// 2. HELPER LOGIC TO DETECT UNWANTED BOTS
+async function isDisallowedBot(): Promise<boolean> {
+  const headersList = await headers();
+  const userAgent = headersList.get('user-agent') || '';
+  const uaLower = userAgent.toLowerCase();
+
+  // Flag anything explicitly trying to look like a generic crawler, spider, or bot
+  const isGenericBot = 
+    uaLower.includes('bot') || 
+    uaLower.includes('crawl') || 
+    uaLower.includes('spider') || 
+    uaLower.includes('scraper');
+
+  // Explicitly allowlist only Google and Bing
+  const isAllowedSearchEngine = uaLower.includes('googlebot') || uaLower.includes('bingbot');
+
+  // If it is a bot, but NOT Google or Bing, intercept it
+  if (isGenericBot && !isAllowedSearchEngine) {
+    return true;
+  }
+
+  return false;
+}
+
 
 async function getHomepageData() {
   const prisma = await getDb();
@@ -167,6 +194,22 @@ async function getPopularTags() {
 
 
 export default async function HomePage() {
+
+
+  // 3. THIS RUNS FIRST: STOP UNVERIFIED BOTS IMMEDIATELY BEFORE ANY PRISMA CALLS EXECUTE
+  if (await isDisallowedBot()) {
+    return (
+      <div className="section-container py-20 text-center min-h-[400px] flex flex-col items-center justify-center">
+        <h1 className="text-3xl font-bold text-red-600">Access Denied</h1>
+        <p className="text-muted-foreground mt-2 max-w-md">
+          Automated data scraping is prohibited on this platform.
+        </p>
+      </div>
+    );
+  }
+
+
+  // 4. If it's a real human or Google/Bing, safely fetch the database data
   const data = await getHomepageData();
   const popularTags = await getPopularTags();
 
