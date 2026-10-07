@@ -144,24 +144,30 @@ export async function searchAds(filters: SearchFilters): Promise<SearchResult> {
       break;
   }
 
-  const [ads, total] = await Promise.all([
-    prisma.ad.findMany({
-      where,
-      orderBy,
-      skip,
-      take: limit,
-      include: {
-        brand: { select: { id: true, name: true, slug: true, logoUrl: true } },
-        category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
-        tags: {
-          include: {
-            tag: { select: { id: true, name: true, slug: true } },
-          },
+  // 1. Fetch the ads for the current page
+  const ads = await prisma.ad.findMany({
+    where,
+    orderBy,
+    skip,
+    take: limit,
+    include: {
+      brand: { select: { id: true, name: true, slug: true, logoUrl: true } },
+      category: { select: { id: true, name: true, slug: true, color: true, icon: true } },
+      tags: {
+        include: {
+          tag: { select: { id: true, name: true, slug: true } },
         },
       },
-    }),
-    prisma.ad.count({ where }),
-  ]);
+    },
+  });
+
+  // 2. Calculate total safely without nested subquery offset evaluation
+  let total = 0;
+  if (page === 1 && ads.length < limit) {
+    total = ads.length;
+  } else {
+    total = await prisma.ad.count({ where });
+  }
 
   const totalPages = Math.ceil(total / limit) || 1;
 
