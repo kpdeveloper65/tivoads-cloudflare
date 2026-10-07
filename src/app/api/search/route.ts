@@ -40,7 +40,6 @@ export async function GET(req: Request) {
 
     // 2. Fetch sidebar filters safely based on whether a query exists
     if (query) {
-      // Optimized Category Facets for Active Searches (Removed mode: 'insensitive' for Cloudflare D1 / SQLite compatibility)
       categories = await prisma.category.findMany({
         where: {
           isActive: true,
@@ -56,10 +55,9 @@ export async function GET(req: Request) {
           name: true,
           slug: true,
         },
-        take: 30, // Safeguard to prevent oversized payload processing
+        take: 30,
       });
 
-      // Optimized Brand Facets for Active Searches (Removed mode: 'insensitive' for Cloudflare D1 / SQLite compatibility)
       brands = await prisma.brand.findMany({
         where: {
           isActive: true,
@@ -78,7 +76,6 @@ export async function GET(req: Request) {
         take: 15,
       });
     } else {
-      // Static Fallback Facets when no search query is present
       categories = await prisma.category.findMany({
         where: { isActive: true },
         select: {
@@ -111,11 +108,19 @@ export async function GET(req: Request) {
         });
     }
 
-    return NextResponse.json({
-      ...result,
-      categories,
-      brands,
-    });
+    // 4. Return response with Edge Caching Headers to protect D1
+    return NextResponse.json(
+      {
+        ...result,
+        categories,
+        brands,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        },
+      }
+    );
   } catch (error) {
     console.error('Search error:', error);
     return NextResponse.json({ error: 'Search failed' }, { status: 500 });

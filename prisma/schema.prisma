@@ -231,6 +231,17 @@ model Ad {
   @@index([trendingScore])
   @@index([externalVideoId])
   @@index([year])
+
+  @@index([status, viewCount])
+  @@index([status, createdAt])
+  @@index([status, isFeatured, viewCount])
+  @@index([status, isTrending, trendingScore])
+  @@index([status, brandId])
+  @@index([status, categoryId])
+  @@index([status, duration])
+  @@index([status, categoryId, viewCount])
+  @@index([status, brandId, viewCount])
+
   @@map("ads")
 }
 
