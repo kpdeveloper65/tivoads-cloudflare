@@ -14,9 +14,11 @@ async function isDisallowedBot(): Promise<boolean> {
 
   // Flag anything explicitly trying to look like a generic crawler, spider, or bot
   const isGenericBot = 
+    uaLower.includes('curl') ||
     uaLower.includes('bot') || 
     uaLower.includes('crawl') || 
     uaLower.includes('spider') || 
+    uaLower.includes('python-requests') ||
     uaLower.includes('scraper');
 
   // Explicitly allowlist only Google and Bing

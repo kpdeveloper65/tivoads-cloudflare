@@ -7,37 +7,16 @@ import { AdCard } from '@/components/ads/AdCard';
 import { AdGrid } from '@/components/ads/AdGrid';
 import { CategoryCard } from '@/components/categories/CategoryCard';
 import { BrandCard } from '@/components/brands/BrandCard';
-import { unstable_cache } from 'next/cache';
 
 export const metadata: Metadata = {
   title: 'TivoAds — The Premium Ad Discovery & Research Library',
   description: 'Search thousands of TV and video ads by brand, category, campaign, and keyword. The premier ad archive for marketers, agencies, and creative professionals.',
 };
 
-
-
-// Wrap the count in an isolated cache that refreshes every 1 hour, 
-// so it never runs on routine page loads or search traffic spikes.
-const getCachedAdCount = unstable_cache(
-  async () => {
-    const prisma = await getDb();
-    return await prisma.ad.count({
-      where: { status: 'PUBLISHED' },
-    });
-  },
-  ['published-ads-count'],
-  { revalidate: 3600 } // Cache for 1 hour
-);
+const STATIC_TOTAL_ADS = 162076;
 
 async function getHomepageData() {
   const prisma = await getDb();
-
-  // 1. Get the cached count for the random seed and UI display (costs 0 rows read most of the time!)
-  const count = await getCachedAdCount();
-
-  const today = new Date().toISOString().slice(0, 10);
-  const seed = Number(today.replace(/-/g, ''));
-  const skip = seed % Math.max(count - 9, 1);
 
   const [featuredAds, latestAds, trendingAds, categories, brands, brandCategoryStats] = await Promise.all([
     // Featured ads
@@ -51,11 +30,10 @@ async function getHomepageData() {
         tags: { include: { tag: { select: { name: true, slug: true } } } },
       },
     }),
-    // Latest ads
+    // Latest ads (Direct top 8 without heavy skip offsets)
     prisma.ad.findMany({
       where: { status: 'PUBLISHED' },
       orderBy: { createdAt: 'desc' },
-      skip,
       take: 8,
       include: {
         brand: { select: { name: true, slug: true, logoUrl: true } },
@@ -86,7 +64,7 @@ async function getHomepageData() {
       orderBy: { adCount: 'desc' },
       take: 10,
     }),
-    // Brand & Category counts only (Removed duplicate ad count)
+    // Brand & Category counts only
     Promise.all([
       prisma.brand.count({ where: { isActive: true } }),
       prisma.category.count({ where: { isActive: true } }),
@@ -99,13 +77,11 @@ async function getHomepageData() {
     trendingAds,
     categories,
     brands,
-    totalAds: count, // <--- Exactly what your UI needs!
+    totalAds: STATIC_TOTAL_ADS,
     totalBrands: brandCategoryStats[0],
     totalCategories: brandCategoryStats[1],
   };
 }
-
-
 
 async function getPopularTags() {
   try {
