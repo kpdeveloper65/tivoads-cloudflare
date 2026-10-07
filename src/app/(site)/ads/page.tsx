@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { unstable_cache } from 'next/cache';
 import { getDb } from '@/lib/prisma';
 import { AdGrid } from '@/components/ads/AdGrid';
 import { AdsFilter } from './AdsFilter';
@@ -15,6 +16,17 @@ interface AdsPageProps {
 
 const PAGE_SIZE = 24;
 
+// Cache the count per unique filter combination for 1 hour to prevent D1 row read spikes
+const getCachedTotalCount = unstable_cache(
+  async (whereStr: string) => {
+    const prisma = await getDb();
+    const where = JSON.parse(whereStr);
+    return await prisma.ad.count({ where });
+  },
+  ['ads-filter-count'],
+  { revalidate: 3600 }
+);
+
 export default async function AdsPage({ searchParams }: AdsPageProps) {
   const resolvedParams = await searchParams;
   
@@ -24,16 +36,16 @@ export default async function AdsPage({ searchParams }: AdsPageProps) {
   const year = resolvedParams.year ? parseInt(resolvedParams.year) : undefined;
   const source = resolvedParams.source;
 
-  const prisma = await getDb();
-
   // 1. Filter Criteria
   const where: any = { status: 'PUBLISHED' };
   if (featured) where.isFeatured = true;
   if (year) where.year = year;
   if (source) where.sourceType = source.toUpperCase();
 
-  // 2. Count Total Published Ads directly for accurate pagination
-  const total = await prisma.ad.count({ where });
+  const prisma = await getDb();
+
+  // 2. Get Cached Total Count (Bypasses D1 table scan on repeat requests)
+  const total = await getCachedTotalCount(JSON.stringify(where));
 
   // 3. Standard Safe Offset Pagination
   const skip = (page - 1) * PAGE_SIZE;
